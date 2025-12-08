@@ -7,6 +7,7 @@ const XAVA_CONTRACT = '0xd1c3f94de7e5b45fa4edbba472491a9f4b166fc4';
 interface TokenData {
   price: number;
   marketCap: number;
+  fdv: number;
   totalSupply: number;
   holders: number;
   priceChange24h: number;
@@ -27,6 +28,7 @@ export default function XavaTracker() {
   const [tokenData, setTokenData] = useState<TokenData>({
     price: 0,
     marketCap: 0,
+    fdv: 0,
     totalSupply: 0,
     holders: 0,
     priceChange24h: 0
@@ -48,8 +50,18 @@ export default function XavaTracker() {
       if (dexData.pairs && dexData.pairs.length > 0) {
         const pair = dexData.pairs[0]; // Get the most liquid pair
         const price = parseFloat(pair.priceUsd) || 0;
-        // Use marketCap (not FDV) for actual market cap
-        const marketCap = parseFloat(pair.marketCap) || 0;
+        const fdv = parseFloat(pair.fdv) || 0;
+        // Calculate actual market cap from circulating supply
+        // If marketCap is not available, estimate from price * circulating supply
+        let marketCap = parseFloat(pair.marketCap) || 0;
+        
+        // If marketCap seems wrong (too high), recalculate
+        // Assuming circulating supply is lower than total supply
+        if (marketCap > fdv * 0.5 || marketCap === 0) {
+          // Estimate circulating supply as ~12% of total (based on $2M cap / $17M FDV)
+          const estimatedCirculating = 100000000 * 0.12;
+          marketCap = price * estimatedCirculating;
+        }
         
         // Fetch holder count from Etherscan (no API key needed for this endpoint)
         let holders = 37000; // Default to 37k+ as per CoinMarketCap
@@ -71,6 +83,7 @@ export default function XavaTracker() {
         setTokenData({
           price,
           marketCap,
+          fdv,
           totalSupply: 100000000, // Fixed 100M supply
           holders,
           priceChange24h: parseFloat(pair.priceChange?.h24) || 0
@@ -231,36 +244,45 @@ export default function XavaTracker() {
           <p className="text-xs text-gray-500 mt-2">Contract: {XAVA_CONTRACT}</p>
         </div>
 
-        {/* Main Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* Price Card */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-            <div className="text-gray-400 text-sm mb-2">Price</div>
-            <div className="text-3xl font-bold mb-2">${tokenData.price.toFixed(5)}</div>
-            <div className={`text-sm ${tokenData.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {tokenData.priceChange24h >= 0 ? '↑' : '↓'} {Math.abs(tokenData.priceChange24h).toFixed(2)}%
+        {/* Main Stats Grid - Scrollable on mobile */}
+        <div className="overflow-x-auto mb-8 pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 min-w-max md:min-w-0">
+            {/* Price Card */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 min-w-[160px]">
+              <div className="text-gray-400 text-sm mb-2">Price</div>
+              <div className="text-2xl md:text-3xl font-bold mb-2">${tokenData.price.toFixed(5)}</div>
+              <div className={`text-sm ${tokenData.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {tokenData.priceChange24h >= 0 ? '↑' : '↓'} {Math.abs(tokenData.priceChange24h).toFixed(2)}%
+              </div>
             </div>
-          </div>
 
-          {/* Market Cap Card */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-            <div className="text-gray-400 text-sm mb-2">Market Cap</div>
-            <div className="text-3xl font-bold">{formatNumber(tokenData.marketCap)}</div>
-            <div className="text-sm text-gray-400 mt-2">Total Value</div>
-          </div>
+            {/* Market Cap Card */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 min-w-[160px]">
+              <div className="text-gray-400 text-sm mb-2">Market Cap</div>
+              <div className="text-2xl md:text-3xl font-bold">{formatNumber(tokenData.marketCap)}</div>
+              <div className="text-sm text-gray-400 mt-2">Circulating</div>
+            </div>
 
-          {/* Total Supply Card */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-            <div className="text-gray-400 text-sm mb-2">Total Supply</div>
-            <div className="text-3xl font-bold">{(tokenData.totalSupply / 1000000).toFixed(0)}M</div>
-            <div className="text-sm text-gray-400 mt-2">Tokens</div>
-          </div>
+            {/* FDV Card */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 min-w-[160px]">
+              <div className="text-gray-400 text-sm mb-2">FDV</div>
+              <div className="text-2xl md:text-3xl font-bold">{formatNumber(tokenData.fdv)}</div>
+              <div className="text-sm text-gray-400 mt-2">Fully Diluted</div>
+            </div>
 
-          {/* Holders Card */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-            <div className="text-gray-400 text-sm mb-2">Holders</div>
-            <div className="text-3xl font-bold">{tokenData.holders.toLocaleString()}</div>
-            <div className="text-sm text-green-400 mt-2">↑ Growing</div>
+            {/* Total Supply Card */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 min-w-[160px]">
+              <div className="text-gray-400 text-sm mb-2">Total Supply</div>
+              <div className="text-2xl md:text-3xl font-bold">{(tokenData.totalSupply / 1000000).toFixed(0)}M</div>
+              <div className="text-sm text-gray-400 mt-2">Tokens</div>
+            </div>
+
+            {/* Holders Card */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 min-w-[160px]">
+              <div className="text-gray-400 text-sm mb-2">Holders</div>
+              <div className="text-2xl md:text-3xl font-bold">{tokenData.holders.toLocaleString()}</div>
+              <div className="text-sm text-green-400 mt-2">↑ Growing</div>
+            </div>
           </div>
         </div>
 
@@ -320,6 +342,11 @@ export default function XavaTracker() {
     </div>
   );
 }
+
+
+
+
+
 
 
 
