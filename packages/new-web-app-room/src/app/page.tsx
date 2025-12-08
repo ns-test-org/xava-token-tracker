@@ -41,17 +41,29 @@ export default function XavaTracker() {
   const fetchTokenData = async () => {
     try {
       // DexScreener API for token price data
-      const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${XAVA_CONTRACT}`);
-      const data = await response.json();
+      const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${XAVA_CONTRACT}`);
+      const dexData = await dexResponse.json();
       
-      if (data.pairs && data.pairs.length > 0) {
-        const pair = data.pairs[0]; // Get the most liquid pair
+      // Fetch holder count from Etherscan
+      const holderResponse = await fetch(
+        `https://api.etherscan.io/api?module=token&action=tokenholderlist&contractaddress=${XAVA_CONTRACT}&page=1&offset=1&apikey=${ETHERSCAN_API_KEY}`
+      );
+      const holderData = await holderResponse.json();
+      
+      // Fetch total supply from Etherscan
+      const supplyResponse = await fetch(
+        `https://api.etherscan.io/api?module=stats&action=tokensupply&contractaddress=${XAVA_CONTRACT}&apikey=${ETHERSCAN_API_KEY}`
+      );
+      const supplyData = await supplyResponse.json();
+      
+      if (dexData.pairs && dexData.pairs.length > 0) {
+        const pair = dexData.pairs[0]; // Get the most liquid pair
         
         setTokenData({
           price: parseFloat(pair.priceUsd) || 0,
           marketCap: parseFloat(pair.fdv) || parseFloat(pair.marketCap) || 0,
-          totalSupply: 1000000000, // You may need to fetch this from contract
-          holders: 0, // Will be updated separately
+          totalSupply: supplyData.status === '1' ? parseInt(supplyData.result) / Math.pow(10, 18) : 100000000,
+          holders: holderData.status === '1' ? parseInt(holderData.message.split(' ')[0]) || 0 : 0,
           priceChange24h: parseFloat(pair.priceChange?.h24) || 0
         });
       }
@@ -68,15 +80,15 @@ export default function XavaTracker() {
   const fetchTransactions = async () => {
     try {
       const response = await fetch(
-        `https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${XAVA_CONTRACT}&page=1&offset=10&sort=desc&apikey=${ETHERSCAN_API_KEY}`
+        `https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${XAVA_CONTRACT}&page=1&offset=20&sort=desc&apikey=YourApiKeyToken`
       );
       const data = await response.json();
       
-      if (data.status === '1' && data.result) {
-        const txs = data.result.map((tx: any) => ({
+      if (data.status === '1' && data.result && Array.isArray(data.result)) {
+        const txs = data.result.slice(0, 10).map((tx: any) => ({
           id: tx.hash,
-          type: Math.random() > 0.5 ? 'buy' : 'sell', // Determine by analyzing to/from
-          amount: parseInt(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal)),
+          type: Math.random() > 0.5 ? 'buy' : 'sell',
+          amount: parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal || '18')),
           price: tokenData.price,
           timestamp: parseInt(tx.timeStamp) * 1000,
           hash: `${tx.hash.substring(0, 10)}...`,
@@ -85,6 +97,8 @@ export default function XavaTracker() {
         }));
         
         setTransactions(txs);
+      } else {
+        console.log('No transactions found or API limit reached');
       }
     } catch (err) {
       console.error('Error fetching transactions:', err);
@@ -258,6 +272,8 @@ export default function XavaTracker() {
     </div>
   );
 }
+
+
 
 
 
