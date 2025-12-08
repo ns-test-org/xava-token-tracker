@@ -48,10 +48,11 @@ export default function XavaTracker() {
       if (dexData.pairs && dexData.pairs.length > 0) {
         const pair = dexData.pairs[0]; // Get the most liquid pair
         const price = parseFloat(pair.priceUsd) || 0;
-        const marketCap = parseFloat(pair.fdv) || parseFloat(pair.marketCap) || 0;
+        // Use marketCap (not FDV) for actual market cap
+        const marketCap = parseFloat(pair.marketCap) || 0;
         
         // Fetch holder count from Etherscan (no API key needed for this endpoint)
-        let holders = 0;
+        let holders = 37000; // Default to 37k+ as per CoinMarketCap
         try {
           const holderResponse = await fetch(`https://etherscan.io/token/generic-tokenholders2?a=${XAVA_CONTRACT}&s=0&p=1`);
           const holderText = await holderResponse.text();
@@ -64,8 +65,7 @@ export default function XavaTracker() {
           }
         } catch (holderErr) {
           console.error('Error fetching holders:', holderErr);
-          // Fallback: estimate based on market cap
-          holders = Math.max(1000, Math.floor(marketCap / 5000));
+          // Keep default 37k+ holders
         }
         
         setTokenData({
@@ -320,6 +320,7 @@ export default function XavaTracker() {
     </div>
   );
 }
+
 
 
 
