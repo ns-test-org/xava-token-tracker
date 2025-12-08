@@ -245,8 +245,8 @@ export default function XavaTracker() {
         </div>
 
         {/* Main Stats Grid - Scrollable on mobile */}
-        <div className="overflow-x-auto mb-8 pb-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 min-w-max md:min-w-0">
+        <div className="overflow-x-auto mb-8 pb-4 -mx-4 px-4">
+          <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-4">
             {/* Price Card */}
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 min-w-[160px]">
               <div className="text-gray-400 text-sm mb-2">Price</div>
@@ -342,6 +342,7 @@ export default function XavaTracker() {
     </div>
   );
 }
+
 
 
 
