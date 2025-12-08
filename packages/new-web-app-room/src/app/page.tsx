@@ -42,19 +42,19 @@ export default function XavaTracker() {
     try {
       // DexScreener API for token price data
       const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${XAVA_CONTRACT}`);
-      const dexData = await dexResponse.json();
+      const dexData: any = await dexResponse.json();
       
       // Fetch holder count from Etherscan
       const holderResponse = await fetch(
         `https://api.etherscan.io/api?module=token&action=tokenholderlist&contractaddress=${XAVA_CONTRACT}&page=1&offset=1&apikey=${ETHERSCAN_API_KEY}`
       );
-      const holderData = await holderResponse.json();
+      const holderData: any = await holderResponse.json();
       
       // Fetch total supply from Etherscan
       const supplyResponse = await fetch(
         `https://api.etherscan.io/api?module=stats&action=tokensupply&contractaddress=${XAVA_CONTRACT}&apikey=${ETHERSCAN_API_KEY}`
       );
-      const supplyData = await supplyResponse.json();
+      const supplyData: any = await supplyResponse.json();
       
       if (dexData.pairs && dexData.pairs.length > 0) {
         const pair = dexData.pairs[0]; // Get the most liquid pair
@@ -82,7 +82,7 @@ export default function XavaTracker() {
       const response = await fetch(
         `https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${XAVA_CONTRACT}&page=1&offset=20&sort=desc&apikey=YourApiKeyToken`
       );
-      const data = await response.json();
+      const data: any = await response.json();
       
       if (data.status === '1' && data.result && Array.isArray(data.result)) {
         const txs = data.result.slice(0, 10).map((tx: any) => ({
@@ -109,6 +109,7 @@ export default function XavaTracker() {
   useEffect(() => {
     fetchTokenData();
     fetchTransactions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refresh token data every 10 seconds
@@ -118,6 +119,7 @@ export default function XavaTracker() {
     }, 10000);
 
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refresh transactions every 30 seconds
@@ -129,6 +131,7 @@ export default function XavaTracker() {
 
       return () => clearInterval(interval);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenData.price]);
 
   const formatNumber = (num: number) => {
@@ -272,6 +275,7 @@ export default function XavaTracker() {
     </div>
   );
 }
+
 
 
 
