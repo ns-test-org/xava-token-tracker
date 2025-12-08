@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 
 const XAVA_CONTRACT = '0xd1c3f94de7e5b45fa4edbba472491a9f4b166fc4';
-const ETHERSCAN_API_KEY = 'YourApiKeyToken'; // Free tier available at etherscan.io
 
 interface TokenData {
   price: number;
@@ -44,26 +43,39 @@ export default function XavaTracker() {
       const dexResponse = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${XAVA_CONTRACT}`);
       const dexData: any = await dexResponse.json();
       
-      // Fetch holder count from Etherscan
+      // Fetch holder count from Etherscan (no API key needed for this endpoint)
       const holderResponse = await fetch(
-        `https://api.etherscan.io/api?module=token&action=tokenholderlist&contractaddress=${XAVA_CONTRACT}&page=1&offset=1&apikey=${ETHERSCAN_API_KEY}`
+        `https://api.etherscan.io/api?module=token&action=tokenholderlist&contractaddress=${XAVA_CONTRACT}&page=1&offset=1`
       );
       const holderData: any = await holderResponse.json();
       
-      // Fetch total supply from Etherscan
+      // Fetch total supply from Etherscan (no API key needed)
       const supplyResponse = await fetch(
-        `https://api.etherscan.io/api?module=stats&action=tokensupply&contractaddress=${XAVA_CONTRACT}&apikey=${ETHERSCAN_API_KEY}`
+        `https://api.etherscan.io/api?module=stats&action=tokensupply&contractaddress=${XAVA_CONTRACT}`
       );
       const supplyData: any = await supplyResponse.json();
       
+      console.log('Holder data:', holderData);
+      console.log('Supply data:', supplyData);
+      
       if (dexData.pairs && dexData.pairs.length > 0) {
         const pair = dexData.pairs[0]; // Get the most liquid pair
+        
+        // Parse holder count from the result message
+        let holderCount = 0;
+        if (holderData.status === '1' && holderData.message) {
+          // Message format: "A total of X record(s) found"
+          const match = holderData.message.match(/(\d+)\s+record/);
+          if (match) {
+            holderCount = parseInt(match[1]);
+          }
+        }
         
         setTokenData({
           price: parseFloat(pair.priceUsd) || 0,
           marketCap: parseFloat(pair.fdv) || parseFloat(pair.marketCap) || 0,
           totalSupply: supplyData.status === '1' ? parseInt(supplyData.result) / Math.pow(10, 18) : 100000000,
-          holders: holderData.status === '1' ? parseInt(holderData.message.split(' ')[0]) || 0 : 0,
+          holders: holderCount,
           priceChange24h: parseFloat(pair.priceChange?.h24) || 0
         });
       }
@@ -80,7 +92,7 @@ export default function XavaTracker() {
   const fetchTransactions = async () => {
     try {
       const response = await fetch(
-        `https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${XAVA_CONTRACT}&page=1&offset=20&sort=desc&apikey=YourApiKeyToken`
+        `https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${XAVA_CONTRACT}&page=1&offset=20&sort=desc`
       );
       const data: any = await response.json();
       
@@ -275,6 +287,9 @@ export default function XavaTracker() {
     </div>
   );
 }
+
+
+
 
 
 
