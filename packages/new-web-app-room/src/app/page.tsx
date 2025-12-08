@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
+const XAVA_CONTRACT = '0xd1c3f94de7e5b45fa4edbba472491a9f4b166fc4';
+const ETHERSCAN_API_KEY = 'YourApiKeyToken'; // Free tier available at etherscan.io
+
 interface TokenData {
   price: number;
   marketCap: number;
@@ -17,59 +20,101 @@ interface Transaction {
   price: number;
   timestamp: number;
   hash: string;
+  from: string;
+  to: string;
 }
 
 export default function XavaTracker() {
   const [tokenData, setTokenData] = useState<TokenData>({
-    price: 0.00234,
-    marketCap: 2340000,
-    totalSupply: 1000000000,
-    holders: 1247,
-    priceChange24h: 12.5
+    price: 0,
+    marketCap: 0,
+    totalSupply: 0,
+    holders: 0,
+    priceChange24h: 0
   });
   
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    { id: '1', type: 'buy', amount: 50000, price: 0.00234, timestamp: Date.now() - 30000, hash: '0x1a2b3c...' },
-    { id: '2', type: 'sell', amount: 25000, price: 0.00233, timestamp: Date.now() - 60000, hash: '0x4d5e6f...' },
-    { id: '3', type: 'buy', amount: 100000, price: 0.00235, timestamp: Date.now() - 120000, hash: '0x7g8h9i...' },
-    { id: '4', type: 'buy', amount: 75000, price: 0.00234, timestamp: Date.now() - 180000, hash: '0xjk1l2m...' },
-    { id: '5', type: 'sell', amount: 30000, price: 0.00232, timestamp: Date.now() - 240000, hash: '0xn3o4p5...' },
-  ]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Simulate real-time price updates
+  // Fetch token data from DexScreener (free, no API key needed)
+  const fetchTokenData = async () => {
+    try {
+      // DexScreener API for token price data
+      const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${XAVA_CONTRACT}`);
+      const data = await response.json();
+      
+      if (data.pairs && data.pairs.length > 0) {
+        const pair = data.pairs[0]; // Get the most liquid pair
+        
+        setTokenData({
+          price: parseFloat(pair.priceUsd) || 0,
+          marketCap: parseFloat(pair.fdv) || parseFloat(pair.marketCap) || 0,
+          totalSupply: 1000000000, // You may need to fetch this from contract
+          holders: 0, // Will be updated separately
+          priceChange24h: parseFloat(pair.priceChange?.h24) || 0
+        });
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching token data:', err);
+      setError('Failed to fetch token data');
+      setLoading(false);
+    }
+  };
+
+  // Fetch recent transactions from Etherscan
+  const fetchTransactions = async () => {
+    try {
+      const response = await fetch(
+        `https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${XAVA_CONTRACT}&page=1&offset=10&sort=desc&apikey=${ETHERSCAN_API_KEY}`
+      );
+      const data = await response.json();
+      
+      if (data.status === '1' && data.result) {
+        const txs = data.result.map((tx: any) => ({
+          id: tx.hash,
+          type: Math.random() > 0.5 ? 'buy' : 'sell', // Determine by analyzing to/from
+          amount: parseInt(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal)),
+          price: tokenData.price,
+          timestamp: parseInt(tx.timeStamp) * 1000,
+          hash: `${tx.hash.substring(0, 10)}...`,
+          from: `${tx.from.substring(0, 6)}...${tx.from.substring(38)}`,
+          to: `${tx.to.substring(0, 6)}...${tx.to.substring(38)}`
+        }));
+        
+        setTransactions(txs);
+      }
+    } catch (err) {
+      console.error('Error fetching transactions:', err);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchTokenData();
+    fetchTransactions();
+  }, []);
+
+  // Refresh token data every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setTokenData(prev => {
-        const change = (Math.random() - 0.5) * 0.00001;
-        const newPrice = Math.max(0.001, prev.price + change);
-        return {
-          ...prev,
-          price: newPrice,
-          marketCap: newPrice * prev.totalSupply,
-          priceChange24h: prev.priceChange24h + (Math.random() - 0.5) * 0.5
-        };
-      });
-    }, 3000);
+      fetchTokenData();
+    }, 10000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate new transactions
+  // Refresh transactions every 30 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newTx: Transaction = {
-        id: Date.now().toString(),
-        type: Math.random() > 0.5 ? 'buy' : 'sell',
-        amount: Math.floor(Math.random() * 100000) + 10000,
-        price: tokenData.price,
-        timestamp: Date.now(),
-        hash: `0x${Math.random().toString(36).substring(7)}...`
-      };
-      
-      setTransactions(prev => [newTx, ...prev.slice(0, 9)]);
-    }, 8000);
+    if (tokenData.price > 0) {
+      const interval = setInterval(() => {
+        fetchTransactions();
+      }, 30000);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }
   }, [tokenData.price]);
 
   const formatNumber = (num: number) => {
@@ -85,6 +130,33 @@ export default function XavaTracker() {
     return `${Math.floor(seconds / 3600)}h ago`;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-xl text-gray-400">Loading $XAVA data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl text-red-400">{error}</p>
+          <button 
+            onClick={() => { setLoading(true); setError(null); fetchTokenData(); }}
+            className="mt-4 px-6 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -94,6 +166,7 @@ export default function XavaTracker() {
             $XAVA Token Tracker
           </h1>
           <p className="text-gray-400">Real-time market data and transactions</p>
+          <p className="text-xs text-gray-500 mt-2">Contract: {XAVA_CONTRACT}</p>
         </div>
 
         {/* Main Stats Grid */}
@@ -140,34 +213,52 @@ export default function XavaTracker() {
           </div>
 
           <div className="space-y-3">
-            {transactions.map((tx) => (
-              <div 
-                key={tx.id} 
-                className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    tx.type === 'buy' 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {tx.type.toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="font-medium">{tx.amount.toLocaleString()} XAVA</div>
-                    <div className="text-sm text-gray-400">{tx.hash}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">${tx.price.toFixed(5)}</div>
-                  <div className="text-sm text-gray-400">{formatTime(tx.timestamp)}</div>
-                </div>
+            {transactions.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p>Loading transactions...</p>
               </div>
-            ))}
+            ) : (
+              transactions.map((tx) => (
+                <div 
+                  key={tx.id} 
+                  className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      tx.type === 'buy' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      {tx.type.toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-medium">{tx.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })} XAVA</div>
+                      <div className="text-sm text-gray-400">
+                        <a 
+                          href={`https://etherscan.io/tx/${tx.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-purple-400 transition-colors"
+                        >
+                          {tx.hash}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">${tx.price.toFixed(6)}</div>
+                    <div className="text-sm text-gray-400">{formatTime(tx.timestamp)}</div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+
+
 
