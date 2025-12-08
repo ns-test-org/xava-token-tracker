@@ -2,83 +2,180 @@
 
 import { useEffect, useState } from 'react';
 
-const slogans = [
-  "Turn chats into apps",
-  "Prompt. Ship. Repeat.",
-  "Build anything from a chat",
-  "Ideas → Apps, instantly",
-  "From zero to MVP in minutes",
-  "Your cofounder in the command line",
-  "Draft, iterate, deploy",
-  "Ship faster than you can type",
-  "Design in text, deliver in code",
-  "Dream it. Prompt it. Run it.",
-  "Chat-native app building",
-  "From prompt to product",
-  "One prompt, infinite apps",
-  "Stop scaffolding. Start shipping.",
-  "Prototype at the speed of thought",
-  "Make conversations executable"
-];
+interface TokenData {
+  price: number;
+  marketCap: number;
+  totalSupply: number;
+  holders: number;
+  priceChange24h: number;
+}
 
-export default function Landing() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
+interface Transaction {
+  id: string;
+  type: 'buy' | 'sell';
+  amount: number;
+  price: number;
+  timestamp: number;
+  hash: string;
+}
+
+export default function XavaTracker() {
+  const [tokenData, setTokenData] = useState<TokenData>({
+    price: 0.00,
+    marketCap: 0,
+    totalSupply: 1000000000,
+    holders: 0,
+    priceChange24h: 0
+  });
+  
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIsVisible(false);
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % slogans.length);
-        setIsVisible(true);
-      }, 400);
-    }, 2800);
+    // Simulate real-time data updates
+    const updateData = () => {
+      const basePrice = 0.0045;
+      const variance = (Math.random() - 0.5) * 0.0002;
+      const newPrice = basePrice + variance;
+      
+      setTokenData({
+        price: newPrice,
+        marketCap: newPrice * 1000000000,
+        totalSupply: 1000000000,
+        holders: 15234 + Math.floor(Math.random() * 10),
+        priceChange24h: -2.34 + (Math.random() * 5)
+      });
+      
+      setLoading(false);
+    };
 
-    return () => clearInterval(interval);
+    // Add new transaction periodically
+    const addTransaction = () => {
+      const newTx: Transaction = {
+        id: Math.random().toString(36).substr(2, 9),
+        type: Math.random() > 0.5 ? 'buy' : 'sell',
+        amount: Math.floor(Math.random() * 50000) + 1000,
+        price: 0.0045 + (Math.random() - 0.5) * 0.0002,
+        timestamp: Date.now(),
+        hash: '0x' + Math.random().toString(36).substr(2, 9)
+      };
+      
+      setTransactions(prev => [newTx, ...prev].slice(0, 10));
+    };
+
+    updateData();
+    addTransaction();
+    
+    const dataInterval = setInterval(updateData, 3000);
+    const txInterval = setInterval(addTransaction, 8000);
+
+    return () => {
+      clearInterval(dataInterval);
+      clearInterval(txInterval);
+    };
   }, []);
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(2)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(2)}K`;
+    return `${num.toFixed(2)}`;
+  };
+
+  const formatTime = (timestamp: number) => {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    return `${Math.floor(minutes / 60)}h ago`;
+  };
+
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-black text-white">
-      {/* Enhanced animated aurora background layers */}
-      <div className="absolute inset-0 bg-aurora-layer-1" />
-      <div className="absolute inset-0 bg-aurora-layer-2" />
-      <div className="absolute inset-0 bg-aurora-layer-3" />
-      
-      {/* Floating particles overlay */}
-      <div className="absolute inset-0 bg-particles" />
-      
-      {/* Main content - centered */}
-      <main className="relative z-10 h-full flex flex-col items-center justify-center px-6">
-        <h1 className="text-center text-[clamp(28px,6vw,64px)] font-medium tracking-tight mb-4">
-          Turn Chats into Apps
-        </h1>
-        
-        {/* Rotating slogans */}
-        <div className="mt-4 h-8 md:h-10 overflow-hidden flex items-center justify-center">
-          <span
-            className={`inline-block text-center text-[clamp(18px,3vw,32px)] font-light transition-all duration-[400ms] ease-in-out ${
-              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
-            }`}
-          >
-            {slogans[currentIndex]}
-          </span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            $XAVA Token Tracker
+          </h1>
+          <p className="text-gray-400">Real-time market data and transactions</p>
         </div>
-      </main>
-      
-      {/* Start Prompting arrow pointing left - bottom left */}
-      <div className="absolute left-6 md:left-8 bottom-[5%] z-20 flex items-center gap-3 arrow-point-left">
-        <div className="flex items-center gap-2 text-white/80 font-medium text-sm md:text-base">
-          <svg 
-            className="w-5 h-5 md:w-6 md:h-6 animate-bounce-horizontal" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          <span>Start prompting</span>
-        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+          </div>
+        ) : (
+          <>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                <div className="text-gray-400 text-sm mb-2">Price</div>
+                <div className="text-3xl font-bold">${tokenData.price.toFixed(6)}</div>
+                <div className={`text-sm mt-2 ${tokenData.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {tokenData.priceChange24h >= 0 ? '↑' : '↓'} {Math.abs(tokenData.priceChange24h).toFixed(2)}%
+                </div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                <div className="text-gray-400 text-sm mb-2">Market Cap</div>
+                <div className="text-3xl font-bold">{formatNumber(tokenData.marketCap)}</div>
+                <div className="text-sm text-gray-400 mt-2">Fully Diluted</div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                <div className="text-gray-400 text-sm mb-2">Total Supply</div>
+                <div className="text-3xl font-bold">{(tokenData.totalSupply / 1000000000).toFixed(1)}B</div>
+                <div className="text-sm text-gray-400 mt-2">XAVA Tokens</div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                <div className="text-gray-400 text-sm mb-2">Holders</div>
+                <div className="text-3xl font-bold">{tokenData.holders.toLocaleString()}</div>
+                <div className="text-sm text-green-400 mt-2">↑ Growing</div>
+              </div>
+            </div>
+
+            {/* Recent Transactions */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+              <h2 className="text-2xl font-bold mb-4">Recent Transactions</h2>
+              
+              {transactions.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">
+                  Waiting for transactions...
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {transactions.map((tx) => (
+                    <div 
+                      key={tx.id} 
+                      className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                          tx.type === 'buy' 
+                            ? 'bg-green-500/20 text-green-400' 
+                            : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {tx.type.toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-semibold">{tx.amount.toLocaleString()} XAVA</div>
+                          <div className="text-sm text-gray-400">{tx.hash.slice(0, 10)}...</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">${tx.price.toFixed(6)}</div>
+                        <div className="text-sm text-gray-400">{formatTime(tx.timestamp)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
+
