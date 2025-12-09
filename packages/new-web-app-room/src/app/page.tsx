@@ -245,11 +245,11 @@ export default function XavaTracker() {
         </div>
 
         {/* Main Stats Grid - Scrollable on mobile */}
-        <div className="mb-8">
-          <div className="overflow-x-auto pb-4">
-            <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-4 min-w-max md:min-w-0">
+        <div className="mb-8 -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="overflow-x-auto overflow-y-visible pb-4 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-4">
               {/* Price Card */}
-              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[280px] md:w-auto">
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[240px] md:w-auto">
               <div className="text-gray-400 text-sm mb-2">Price</div>
               <div className="text-2xl md:text-3xl font-bold mb-2">${tokenData.price.toFixed(5)}</div>
               <div className={`text-sm ${tokenData.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -258,28 +258,28 @@ export default function XavaTracker() {
             </div>
 
               {/* Market Cap Card */}
-              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[280px] md:w-auto">
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[240px] md:w-auto">
               <div className="text-gray-400 text-sm mb-2">Market Cap</div>
               <div className="text-2xl md:text-3xl font-bold">{formatNumber(tokenData.marketCap)}</div>
               <div className="text-sm text-gray-400 mt-2">Circulating</div>
             </div>
 
               {/* FDV Card */}
-              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[280px] md:w-auto">
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[240px] md:w-auto">
               <div className="text-gray-400 text-sm mb-2">FDV</div>
               <div className="text-2xl md:text-3xl font-bold">{formatNumber(tokenData.fdv)}</div>
               <div className="text-sm text-gray-400 mt-2">Fully Diluted</div>
             </div>
 
               {/* Total Supply Card */}
-              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[280px] md:w-auto">
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[240px] md:w-auto">
               <div className="text-gray-400 text-sm mb-2">Total Supply</div>
               <div className="text-2xl md:text-3xl font-bold">{(tokenData.totalSupply / 1000000).toFixed(0)}M</div>
               <div className="text-sm text-gray-400 mt-2">Tokens</div>
             </div>
 
               {/* Holders Card */}
-              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[280px] md:w-auto">
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[240px] md:w-auto">
               <div className="text-gray-400 text-sm mb-2">Holders</div>
               <div className="text-2xl md:text-3xl font-bold">{tokenData.holders.toLocaleString()}</div>
               <div className="text-sm text-green-400 mt-2">↑ Growing</div>
@@ -344,6 +344,11 @@ export default function XavaTracker() {
     </div>
   );
 }
+
+
+
+
+
 
 
 
