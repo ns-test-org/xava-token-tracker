@@ -245,9 +245,9 @@ export default function XavaTracker() {
         </div>
 
         {/* Main Stats Grid - Scrollable on mobile */}
-        <div className="mb-8 -mx-4 px-4 md:mx-0 md:px-0">
-          <div className="overflow-x-auto overflow-y-visible pb-4 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="mb-8">
+          <div className="overflow-x-auto pb-4 md:overflow-x-visible">
+            <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-4 min-w-max md:min-w-0">
               {/* Price Card */}
               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 flex-shrink-0 w-[240px] md:w-auto">
               <div className="text-gray-400 text-sm mb-2">Price</div>
@@ -344,6 +344,7 @@ export default function XavaTracker() {
     </div>
   );
 }
+
 
 
 
