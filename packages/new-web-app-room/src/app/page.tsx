@@ -298,7 +298,7 @@ export default function XavaTracker() {
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="max-h-[600px] overflow-y-auto space-y-3 pr-2">
             {transactions.length === 0 ? (
               <div className="text-center py-8 text-gray-400">
                 <p>Loading transactions...</p>
@@ -344,6 +344,7 @@ export default function XavaTracker() {
     </div>
   );
 }
+
 
 
 
